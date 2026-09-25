@@ -1,0 +1,30 @@
+{
+  "name": "twitter-clone",
+  "version": "1.0.0",
+  "description": "A twitter clone.",
+  "homepage": "https://github.com/bugragedikli/twitter-clone#readme",
+  "bugs": {
+    "url": "https://github.com/bugragedikli/twitter-clone/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bugragedikli/twitter-clone.git"
+  },
+  "license": "ISC",
+  "author": "Buğra Gedikli",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node backend/src/index.js",
+    "dev": "nodemon backend/src/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.3",
+    "express": "^5.2.1",
+    "nodemon": "^3.1.14",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.11.0"
+  }
+}
