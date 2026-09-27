@@ -14,10 +14,8 @@ app.use(cookieParser()); //middleware to parse cookies
 
 // Import routes
 import authRoutes from "./routes/auth.route.js";
-import chirpRoutes from "./routes/chirpRoutes.js";
 
 //API Routes
 app.use("/auth", authRoutes);
-app.use("/chirps", chirpRoutes);
 
 export default app;

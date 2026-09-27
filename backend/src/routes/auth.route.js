@@ -35,7 +35,7 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypet.hash(password, 10);
 
     const newUser = await pool.query(
-        'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING *',
+        'INSERT INTO users (username, email, password_hash, display_name) VALUES ($1, $2, $3, $1) RETURNING id, username, email, display_name',
         [username, email, hashedPassword]
     );
 
@@ -71,7 +71,7 @@ router.post('/login', async (req, res) => {
 
     res.cookie('token', token, cookieOptions);
 
-    res.json({ user: { id: userData.id, username: userData.username, email: userData.email } });
+    res.json({ user: { id: userData.id, username: userData.username, email: userData.email, profile_image_url: userData.profile_image_url, display_name: userData.display_name } });
 });
 
 //Me
