@@ -42,7 +42,7 @@ function App() {
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login setUser={setUser} />} />
         <Route path="/register" element={user ? <Navigate to="/" replace /> : <Register setUser={setUser} />} />
         <Route element={ <Home user={user} setUser={setUser} />}>
-          <Route path="/" element={<Feed />} />
+          <Route path="/" element={<Feed user={user} />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

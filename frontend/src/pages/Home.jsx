@@ -14,13 +14,15 @@ const Home = ({user, setUser}) => {
         </main>
 
         <div className="hidden border-l border-(--accent-color) p-4 lg:block">
-          <input
-            type="search"
-            placeholder="Ara"
-            aria-label="Ara"
-            className="w-full rounded-2xl bg-(--accent-color) px-4 py-2"
-          />
-          <h2 className="mt-6 text-xl font-bold">Trends</h2>
+          <div className="sticky top-4">
+            <input
+              type="search"
+              placeholder="Ara"
+              aria-label="Ara"
+              className="w-full rounded-2xl bg-(--accent-color) px-4 py-2"
+            />
+            <h2 className="mt-6 text-xl font-bold">Trends</h2>
+          </div>
         </div>
       </div>
     )

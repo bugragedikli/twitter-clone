@@ -6,7 +6,7 @@ import ProfileBar from './ProfileBar';
 
 function Navbar({ user, setUser }) {
     return (
-        <nav className="flex flex-col gap-6 h-full">
+        <nav className="flex flex-col gap-6 h-full fixed">
             <Link to="/" className="text-[36px] font-bold">Chirper</Link>
             {user ? (
                 <div className="flex flex-col justify-between h-full">
