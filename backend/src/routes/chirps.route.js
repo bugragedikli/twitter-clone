@@ -4,25 +4,44 @@ import pool from '../config/database.js';
 const router = express.Router();
 
 router.get('/', async (req, res) => {
+    const limit = Math.min(Number(req.query.limit) || 20, 50);
+    const offset = Number(req.query.offset) || 0;
+
     try {
-        const chirps = await pool.query('SELECT c.*, u.display_name, u.username, u.profile_image_url FROM chirps c JOIN users u ON c.user_id = u.id ORDER BY c.created_at DESC LIMIT 100');
-        res.json(chirps.rows);
+        const result = await pool.query(`
+            SELECT c.*, u.display_name, u.username, u.profile_image_url 
+            FROM chirps c 
+            JOIN users u ON c.user_id = u.id 
+            ORDER BY c.created_at DESC 
+            LIMIT $1 OFFSET $2`, 
+            [limit, offset]);
+        res.json({
+            chirps: result.rows,
+            hasMore: result.rows.length === limit
+        });
     }
-    catch {
+    catch (error){
+        console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 
 router.get('/following', async (req, res) => {
+    const limit = Math.min(Number(req.query.limit) || 20, 50);
+    const offset = Number(req.query.offset) || 0;
+
     try {
-        const chirps = await pool.query(`
+        const result = await pool.query(`
             SELECT c.*, u.display_name, u.username, u.profile_image_url 
             FROM chirps c 
-            JOIN users u 
-            ON c.user_id = u.id 
-            ORDER BY c.created_at 
-            DESC LIMIT 100`);
-        res.json(chirps.rows);
+            JOIN users u ON c.user_id = u.id 
+            ORDER BY c.created_at DESC 
+            LIMIT $1 OFFSET $2`, 
+            [limit, offset]);
+        res.json({
+            chirps: result.rows,
+            hasMore: result.rows.length === limit
+        });
     }
     catch {
         res.status(500).json({ error: 'Internal Server Error' });

@@ -4,6 +4,8 @@ import Chirp from '../components/Chirp';
 import EnterChirpField from '../components/EnterChirpField';
 import { ClipLoader } from "react-spinners";
 
+const PAGE_SIZE = 5;
+
 const Feed = ({user}) => {
     const [isChirpsLoaded, setChirpsLoaded] = useState(false);
     const [chirps, setChirps] = useState([]);
@@ -11,6 +13,9 @@ const Feed = ({user}) => {
     const [activeTab, setActiveTab] = useState(
         () => localStorage.getItem('activeTab') || 'feed'
     );
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
 
     const chirpsCache = useRef({
         feed: null,
@@ -21,6 +26,8 @@ const Feed = ({user}) => {
         feed: [],
         following: [],
     });
+
+    const wasAtTop = useRef(true);
 
     const mergeChirps = (existingChirps, incomingChirps) => {
         const chirpsById = new Map(
@@ -39,41 +46,55 @@ const Feed = ({user}) => {
     useEffect(() => {
         let cancelled = false;
 
-        const endpoint =
-            activeTab === "following"
-                ? "http://localhost:3000/chirps/following"
-                : "http://localhost:3000/chirps";
+        localStorage.setItem("activeTab", activeTab);
 
-        const loadChirps = async (showLoader = false) => {
+        const getEndpoint = (pageOffset = 0) => {
+            const route =
+                activeTab === "following"
+                    ? "/chirps/following"
+                    : "/chirps";
+
+            return `http://localhost:3000${route}?limit=${PAGE_SIZE}&offset=${pageOffset}`;
+        };
+
+        // Function to load the latest chirps and update the state
+        const loadLatestChirps = async (showLoader = false) => {
+            //Show loader when chirps are loading for the first time
             if (showLoader) {
                 setChirpsLoaded(false);
             }
 
             try {
-                const res = await axios.get(endpoint);
+                // Fetch the latest chirps from the server
+                const response = await axios.get(getEndpoint(0));
 
                 if (cancelled) {
                     return;
                 }
 
+                const responseChirps = response.data.chirps;
                 const cachedChirps = chirpsCache.current[activeTab];
 
-                // First load: display posts immediately.
+                //First loading of chirps
                 if (cachedChirps === null) {
-                    chirpsCache.current[activeTab] = res.data;
-                    setChirps(res.data);
+                    chirpsCache.current[activeTab] = responseChirps;
+                    setChirps(responseChirps);
                     setPendingChirps([]);
+                    setOffset(responseChirps.length);
+                    setHasMore(response.data.hasMore);
                     return;
                 }
-
-                // Later requests: find posts not currently displayed.
-                const newChirps = res.data.filter(
+                
+                // Identify new chirps that are not already in the cache
+                const newChirps = responseChirps.filter(
                     (incomingChirp) =>
                         !cachedChirps.some(
-                            (cachedChirp) => cachedChirp.id === incomingChirp.id
+                            (cachedChirp) =>
+                                cachedChirp.id === incomingChirp.id
                         )
                 );
-
+                
+                // Update the cache with the latest chirps
                 if (newChirps.length > 0) {
                     const pending = mergeChirps(
                         pendingChirpsCache.current[activeTab],
@@ -85,7 +106,7 @@ const Feed = ({user}) => {
                 }
             } catch (error) {
                 if (!cancelled) {
-                    console.error("Error fetching chirps:", error);
+                    console.error("Error fetching latest chirps:", error);
                 }
             } finally {
                 if (!cancelled) {
@@ -94,25 +115,33 @@ const Feed = ({user}) => {
             }
         };
 
-        localStorage.setItem("activeTab", activeTab);
-
         const cachedChirps = chirpsCache.current[activeTab];
 
         if (cachedChirps !== null) {
             setChirps(cachedChirps);
             setPendingChirps(pendingChirpsCache.current[activeTab]);
+            setOffset(cachedChirps.length);
+            setHasMore(true);
             setChirpsLoaded(true);
         } else {
-            loadChirps(true);
+            loadLatestChirps(true);
         }
 
-        const intervalId = setInterval(() => {
-            loadChirps();
-        }, 15000);
+        const handleScroll = () => {
+            const isAtTop = window.scrollY <= 10;
+
+            if (isAtTop && !wasAtTop.current) {
+                loadLatestChirps();
+            }
+
+            wasAtTop.current = isAtTop;
+        };
+
+        window.addEventListener("scroll", handleScroll);
 
         return () => {
             cancelled = true;
-            clearInterval(intervalId);
+            window.removeEventListener("scroll", handleScroll);
         };
     }, [activeTab]);
 
@@ -127,19 +156,46 @@ const Feed = ({user}) => {
     }
 
     const showNewChirps = () => {
-            const pending = pendingChirpsCache.current[activeTab];
+        const pending = pendingChirpsCache.current[activeTab];
 
-            const updatedChirps = mergeChirps(
-                chirpsCache.current[activeTab] || [],
-                pending
+        const updatedChirps = mergeChirps(
+            chirpsCache.current[activeTab] || [],
+            pending
+        );
+
+        chirpsCache.current[activeTab] = updatedChirps;
+        pendingChirpsCache.current[activeTab] = [];
+
+        setChirps(updatedChirps);
+        setPendingChirps([]);
+    };
+
+    const loadMoreChirps = async () => {
+        if (isLoadingMore || !hasMore) {
+            return;
+        }
+
+        setIsLoadingMore(true);
+
+        try {
+            const res = await axios.get(
+                `http://localhost:3000/chirps?limit=${PAGE_SIZE}&offset=${offset}`
             );
 
-            chirpsCache.current[activeTab] = updatedChirps;
-            pendingChirpsCache.current[activeTab] = [];
+            setChirps((currentChirps) => [
+                ...currentChirps,
+                ...res.data.chirps
+            ]);
 
-            setChirps(updatedChirps);
-            setPendingChirps([]);
-        };
+            setOffset((currentOffset) =>
+                currentOffset + res.data.chirps.length
+            );
+
+            setHasMore(res.data.hasMore);
+        } finally {
+            setIsLoadingMore(false);
+        }
+    };
 
     return (
         <div>
@@ -183,6 +239,16 @@ const Feed = ({user}) => {
                         <ClipLoader size={40} color="#ffffff" />
                     </div>
                 }
+
+                {isChirpsLoaded && hasMore && (
+                    <button
+                        onClick={loadMoreChirps}
+                        disabled={isLoadingMore}
+                        className="w-full border-t border-(--accent-color) p-4 hover:bg-(--accent-color)"
+                    >
+                        {isLoadingMore ? "Loading..." : "Load more chirps"}
+                    </button>
+                )}
             </div>
         </div>
     )
