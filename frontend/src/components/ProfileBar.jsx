@@ -1,17 +1,15 @@
 import { useId, useState } from 'react';
-import axios from 'axios';
 import { BsThreeDots} from "react-icons/bs";
 import defaultProfileImage from '../assets/default-profile.jpg';
+import { logout } from '../api/auth';
 
 export default function ProfileBar({user, setUser}) {
     const [isOpen, setIsOpen] = useState(false);
     const panelId = useId();
 
-    const handleLogout = () => {
-        axios.post('http://localhost:3000/auth/logout')
-        .then(() => {
-            setUser(null);
-        });
+    const handleLogout = async () => {
+        await logout();
+        setUser(null);
     }
 
     return (

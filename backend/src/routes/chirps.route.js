@@ -5,19 +5,29 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
     const limit = Math.min(Number(req.query.limit) || 20, 50);
-    const offset = Number(req.query.offset) || 0;
+    const before = req.query.before ? Number(req.query.before) : null;
+
+    if (before !== null && !Number.isInteger(before)) {
+        return res.status(400).json({ error: 'Invalid cursor' });
+    }
 
     try {
         const result = await pool.query(`
             SELECT c.*, u.display_name, u.username, u.profile_image_url 
             FROM chirps c 
             JOIN users u ON c.user_id = u.id 
-            ORDER BY c.created_at DESC 
-            LIMIT $1 OFFSET $2`, 
-            [limit, offset]);
+            WHERE $2::int IS NULL
+                OR (c.created_at, c.id) < (SELECT created_at, id FROM chirps WHERE id = $2)
+            ORDER BY c.created_at DESC, c.id DESC
+            LIMIT $1`, 
+            [limit + 1, before]);
+
+            const hasMore = result.rows.length > limit;
+            const chirps = hasMore ? result.rows.slice(0, limit) : result.rows;
+        
         res.json({
-            chirps: result.rows,
-            hasMore: result.rows.length === limit
+            chirps,
+            nextCursor: hasMore ? chirps[chirps.length - 1].id : null,
         });
     }
     catch (error){
@@ -28,22 +38,33 @@ router.get('/', async (req, res) => {
 
 router.get('/following', async (req, res) => {
     const limit = Math.min(Number(req.query.limit) || 20, 50);
-    const offset = Number(req.query.offset) || 0;
+    const before = req.query.before ? Number(req.query.before) : null;
+
+    if (before !== null && !Number.isInteger(before)) {
+        return res.status(400).json({ error: 'Invalid cursor' });
+    }
 
     try {
         const result = await pool.query(`
             SELECT c.*, u.display_name, u.username, u.profile_image_url 
             FROM chirps c 
             JOIN users u ON c.user_id = u.id 
-            ORDER BY c.created_at DESC 
-            LIMIT $1 OFFSET $2`, 
-            [limit, offset]);
+            WHERE $2::int IS NULL
+                OR (c.created_at, c.id) < (SELECT created_at, id FROM chirps WHERE id = $2)
+            ORDER BY c.created_at DESC, c.id DESC
+            LIMIT $1`, 
+            [limit + 1, before]);
+
+            const hasMore = result.rows.length > limit;
+            const chirps = hasMore ? result.rows.slice(0, limit) : result.rows;
+        
         res.json({
-            chirps: result.rows,
-            hasMore: result.rows.length === limit
+            chirps,
+            nextCursor: hasMore ? chirps[chirps.length - 1].id : null,
         });
     }
-    catch {
+    catch (error){
+        console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });

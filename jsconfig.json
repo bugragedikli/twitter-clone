@@ -5,11 +5,11 @@
         "target": "ES2024",
         "jsx": "react-jsx",
         "allowImportingTsExtensions": true,
-        "checkJs": false,
+        "checkJs": true,
         "experimentalDecorators": false,
-        "strictNullChecks": true,
-        "strictFunctionTypes": true,
-        "strict": true
+        "strictNullChecks": false,
+        "strictFunctionTypes": false,
+        "strict": false
     },
     "exclude": [
         "node_modules",

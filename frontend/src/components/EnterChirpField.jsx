@@ -1,26 +1,19 @@
 import {useState} from "react";
-import axios from "axios";
 import DefaultProfileImage from '../assets/default-profile.jpg';
+import { useCreateChirp } from "../hooks/useCreateChirp";
 
-export default function EnterChirpField({ user , handleNewChirp}) {
+export default function EnterChirpField({ user }) {
     const [content, setContent] = useState('');
+    const { mutate, isPending, isError } = useCreateChirp();
 
-    const handleChirpSubmit = async () => {
-        if (!content.trim()) {
-            return;
-        }
+    const handleChirpSubmit = () => {
+        const trimmed = content.trim();
+        if (!trimmed) return;
 
-        // Submit the chirp
-        try {
-            const res = await axios.post('http://localhost:3000/chirps', {
-                user_id: user.id,
-                content: content.trim(),
-            });
-            setContent('');
-            handleNewChirp(res.data);
-        } catch (error) {
-            console.error('Error submitting chirp:', error);
-        }
+        mutate(
+            { user_id: user.id, content: trimmed },
+            { onSuccess: () => setContent('') }
+        );
     };
 
     return (
@@ -41,10 +34,12 @@ export default function EnterChirpField({ user , handleNewChirp}) {
             </div>
             <div className="flex justify-end pr-4 pb-2">
                 <button
-                className="bg-(--primary-color) text-white leading-4.5 px-4 py-2 rounded-full"
-                onClick={handleChirpSubmit}>
-                    Send Chirp
+                className="bg-(--primary-color) text-white leading-4.5 px-4 py-2 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleChirpSubmit}
+                disabled={isPending || !content.trim()}>
+                    {isPending ? 'Chirping...' : 'Send Chirp'}
                 </button>
+                {isError && <p className="text-red-500 text-sm px-4">Chirp could not be sent.</p>}
             </div>
         </div>
     )

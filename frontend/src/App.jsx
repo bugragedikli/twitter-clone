@@ -6,9 +6,7 @@ import Feed from './pages/Feed';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import NotFound from './components/NotFound';
-import axios from 'axios';
-
-axios.defaults.withCredentials = true;
+import { getMe } from './api/auth';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -17,8 +15,8 @@ function App() {
   useEffect(() => {
     const fetchUser = async () => {
       try{
-        const res = await axios.get('http://localhost:3000/auth/me');
-        setUser(res.data);
+        const user = await getMe();
+        setUser(user);
       }
       catch (err) {
         console.error(err);
