@@ -24,3 +24,18 @@ export const protect = async (req, res, next) => {
         res.status(401).json({ message: 'Not authorized, token failed' });
     }
 }
+
+export const optionalAuth = (req, res, next) => {
+    const token = req.cookies.token;
+
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            req.user = { id: decoded.id };
+        } catch {
+            // Invalid or expired token: continue as a logged-out visitor
+        }
+    }
+
+    next();
+};

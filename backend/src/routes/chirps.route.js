@@ -1,33 +1,26 @@
 import express from "express";
 import pool from '../config/database.js';
+import { protect, optionalAuth } from "../middleware/auth.js";
+import { getChirps } from "../services/chirps.service.js";
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
+router.get('/', optionalAuth, async (req, res) => {
     const limit = Math.min(Number(req.query.limit) || 20, 50);
     const before = req.query.before ? Number(req.query.before) : null;
+    const authorId = req.query.authorId ? Number(req.query.authorId) : null;
+    const viewerId = req.user?.id ?? null;
 
     if (before !== null && !Number.isInteger(before)) {
         return res.status(400).json({ error: 'Invalid cursor' });
     }
 
     try {
-        const result = await pool.query(`
-            SELECT c.*, u.display_name, u.username, u.profile_image_url 
-            FROM chirps c 
-            JOIN users u ON c.user_id = u.id 
-            WHERE $2::int IS NULL
-                OR (c.created_at, c.id) < (SELECT created_at, id FROM chirps WHERE id = $2)
-            ORDER BY c.created_at DESC, c.id DESC
-            LIMIT $1`, 
-            [limit + 1, before]);
-
-            const hasMore = result.rows.length > limit;
-            const chirps = hasMore ? result.rows.slice(0, limit) : result.rows;
+        const result = await getChirps({ limit, before, viewerId, authorId, followingOf: null });
         
         res.json({
-            chirps,
-            nextCursor: hasMore ? chirps[chirps.length - 1].id : null,
+            chirps: result.chirps,
+            nextCursor: result.nextCursor,
         });
     }
     catch (error){
@@ -36,31 +29,22 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.get('/following', async (req, res) => {
+router.get('/following', optionalAuth, async (req, res) => {
     const limit = Math.min(Number(req.query.limit) || 20, 50);
     const before = req.query.before ? Number(req.query.before) : null;
+    const authorId = req.query.authorId ? Number(req.query.authorId) : null;
+    const viewerId = req.user?.id ?? null;
 
     if (before !== null && !Number.isInteger(before)) {
         return res.status(400).json({ error: 'Invalid cursor' });
     }
 
     try {
-        const result = await pool.query(`
-            SELECT c.*, u.display_name, u.username, u.profile_image_url 
-            FROM chirps c 
-            JOIN users u ON c.user_id = u.id 
-            WHERE $2::int IS NULL
-                OR (c.created_at, c.id) < (SELECT created_at, id FROM chirps WHERE id = $2)
-            ORDER BY c.created_at DESC, c.id DESC
-            LIMIT $1`, 
-            [limit + 1, before]);
-
-            const hasMore = result.rows.length > limit;
-            const chirps = hasMore ? result.rows.slice(0, limit) : result.rows;
+        const result = await getChirps({ limit, before, viewerId, authorId, followingOf: viewerId });
         
         res.json({
-            chirps,
-            nextCursor: hasMore ? chirps[chirps.length - 1].id : null,
+            chirps: result.chirps,
+            nextCursor: result.nextCursor,
         });
     }
     catch (error){
@@ -69,10 +53,21 @@ router.get('/following', async (req, res) => {
     }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', optionalAuth, async (req, res) => {
     const { id } = req.params;
+    const userId = req.user?.id ?? null;
+
     try {
-        const chirp = await pool.query('SELECT c.*, u.display_name, u.username, u.profile_image_url FROM chirps c JOIN users u ON c.user_id = u.id WHERE c.id = $1', [id]);
+        const chirp = await pool.query(`
+            SELECT c.*, u.display_name, u.username, u.profile_image_url,
+                (SELECT COUNT(*) FROM likes l WHERE l.chirp_id = c.id)::int AS like_count,
+                EXISTS (
+                    SELECT 1 FROM likes l WHERE l.chirp_id = c.id AND l.user_id = $2
+                ) AS liked_by_me
+            FROM chirps c 
+            JOIN users u ON c.user_id = u.id 
+            WHERE c.id = $1`
+            , [id, userId]);
         if (chirp.rows.length === 0) {
             return res.status(404).json({ error: 'Chirp not found' });
         }
@@ -83,10 +78,15 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-router.post("/", async (req, res) => {
-    const { user_id, content } = req.body;
+router.post("/", protect, async (req, res) => {
+    const { content } = req.body;
+    const user_id = req.user?.id;
 
-    if (!user_id || !content) {
+    if(!user_id) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (!content) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -97,7 +97,7 @@ router.post("/", async (req, res) => {
                 VALUES ($1, $2)
                 RETURNING *
             )
-            SELECT inserted.*, u.display_name, u.username, u.profile_image_url
+            SELECT inserted.*, u.display_name, u.username, u.profile_image_url, 0 AS like_count, false AS liked_by_me
             FROM inserted
             JOIN users u ON inserted.user_id = u.id`,
             [user_id, content]

@@ -1,15 +1,19 @@
 import React from 'react';
 import DefaultProfileImage from '../assets/default-profile.jpg';
-import { BsHeart, BsChatSquare, BsSend, BsArrowRepeat, BsBookmark } from "react-icons/bs";
+import { BsHeart, BsHeartFill, BsChatSquare, BsSend, BsArrowRepeat, BsBookmark } from "react-icons/bs";
 import formatTimestamp from '../utils/TimestampFormatter';
+import { useToggleLike } from '../hooks/useToggleLike';
+import { Link } from 'react-router-dom';
 
-export default function Chirp({ profileImage, displayName, username, content, timestamp }) {
+export default function Chirp({ chirpId, profileImage, displayName, username, content, timestamp, likeCount, likedByMe }) {
+    const { mutate: toggleLike } = useToggleLike();
+    
     return (
         <div className="flex border-t border-b border-(--accent-color) gap-2 px-4 pt-4 leading-5">
             <img src={profileImage || DefaultProfileImage} alt="Profile" className="w-10 h-10 rounded-full" />
             <div className="min-w-0 w-full">
-                <a href="#" className="hover:underline mr-2">{displayName}</a>
-                <a href="#" className="text-gray-500">@{username}</a>
+                <Link to={`/${username}`} className="hover:underline mr-2">{displayName}</Link>
+                <Link to={`/${username}`} className="text-gray-500">@{username}</Link>
                 <span className="text-gray-500"> · {formatTimestamp(timestamp)}</span>
                 <p className="whitespace-pre-wrap wrap-break-word pr-2">{content}</p>
 
@@ -22,9 +26,11 @@ export default function Chirp({ profileImage, displayName, username, content, ti
                         <BsArrowRepeat className="w-4 h-4"/>
                         <p>0</p>
                     </button>
-                    <button className="flex items-center gap-1 hover:text-red-500 hover:bg-red-500/10 px-2 py-1 rounded-full">
-                        <BsHeart className="w-4 h-4"/>
-                        <p>0</p>
+                    <button 
+                    onClick={() => toggleLike({ chirpId, liked: !likedByMe })}
+                    className="flex items-center gap-1 hover:text-red-500 hover:bg-red-500/10 px-2 py-1 rounded-full">
+                        {likedByMe ? <BsHeartFill className="w-4 h-4 text-red-500"/> : <BsHeart className="w-4 h-4"/>}
+                        {likedByMe ? <p className="text-red-500">{likeCount}</p> : <p>{likeCount}</p>}
                     </button>
                     <span className="flex items-center">
                         <button className="flex items-center gap-1 hover:text-(--primary-color) hover:bg-(--primary-color-hover)/10 px-2 py-2 rounded-full">

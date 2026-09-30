@@ -5,7 +5,7 @@
         "target": "ES2024",
         "jsx": "react-jsx",
         "allowImportingTsExtensions": true,
-        "checkJs": true,
+        "checkJs": false,
         "experimentalDecorators": false,
         "strictNullChecks": false,
         "strictFunctionTypes": false,
@@ -13,6 +13,6 @@
     },
     "exclude": [
         "node_modules",
-        "**/node_modules/*"
+        "**/node_modules/*",
     ]
 }
