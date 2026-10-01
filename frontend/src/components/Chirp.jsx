@@ -3,10 +3,12 @@ import DefaultProfileImage from '../assets/default-profile.jpg';
 import { BsHeart, BsHeartFill, BsChatSquare, BsSend, BsArrowRepeat, BsBookmark } from "react-icons/bs";
 import formatTimestamp from '../utils/TimestampFormatter';
 import { useToggleLike } from '../hooks/useToggleLike';
+import { useToggleRechirp } from '../hooks/useToggleRechirp';
 import { Link } from 'react-router-dom';
 
-export default function Chirp({ chirpId, profileImage, displayName, username, content, timestamp, likeCount, likedByMe }) {
+export default function Chirp({ chirpId, profileImage, displayName, username, content, timestamp, likeCount, likedByMe, rechirpCount, rechirpedByMe }) {
     const { mutate: toggleLike } = useToggleLike();
+    const { mutate: toggleRechirp } = useToggleRechirp();
     
     return (
         <div className="flex border-t border-b border-(--accent-color) gap-2 px-4 pt-4 leading-5">
@@ -22,9 +24,11 @@ export default function Chirp({ chirpId, profileImage, displayName, username, co
                         <BsChatSquare className="w-4 h-4"/>
                         <p>0</p>
                     </button>
-                    <button className="flex items-center gap-1 hover:text-green-400 hover:bg-green-400/10 px-2 py-1 rounded-full">
-                        <BsArrowRepeat className="w-4 h-4"/>
-                        <p>0</p>
+                    <button 
+                    onClick={() => toggleRechirp({ chirpId, rechirped: !rechirpedByMe })}
+                    className="flex items-center gap-1 hover:text-green-400 hover:bg-green-400/10 px-2 py-1 rounded-full">
+                        {rechirpedByMe ? <BsArrowRepeat className="w-4 h-4 text-green-400"/> : <BsArrowRepeat className="w-4 h-4"/>}
+                        {rechirpedByMe ? <p className="text-green-400">{rechirpCount}</p> : <p>{rechirpCount}</p>}
                     </button>
                     <button 
                     onClick={() => toggleLike({ chirpId, liked: !likedByMe })}

@@ -5,9 +5,11 @@ import { BsArrowLeft, BsSearch } from "react-icons/bs";
 import { Link } from 'react-router-dom';
 import ChirpList from '../components/ChirpList';
 import { useUserChirps } from '../hooks/useUserChirps';
+import { useUserRechirps } from '../hooks/useUserRechirps';
 import { ClipLoader } from "react-spinners";
 import { useProfile } from '../hooks/useProfile';
 import { useToggleFollow } from '../hooks/useToggleFollow';
+import Chirp from '../components/Chirp';
 
 const Profile = ({ user }) => {
     const { username } = useParams();
@@ -17,6 +19,7 @@ const Profile = ({ user }) => {
     const toggleFollow = useToggleFollow();
 
     const userChirpsQuery = useUserChirps(user?.id, profile?.id);
+    const userRechirpsQuery = useUserRechirps(user?.id, profile?.id);
 
 
     if (isPending) {
@@ -122,12 +125,12 @@ const Profile = ({ user }) => {
             }
             {tab === 'replies' && 
             <div>
-                Replies content goes here...
+                <p>Replies content goes here...</p>
             </div>
             }
             {tab === 'rechirps' && 
             <div>
-                Rechirps content goes here...
+                <ChirpList query={userRechirpsQuery} />
             </div>
             }
         </div>

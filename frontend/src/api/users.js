@@ -22,4 +22,9 @@ const fetchFollowList = async ({ userId, type, before = null, limit = 20 }) => {
     return res.data;
 };
 
-export { fetchUser, fetchUserChirps, fetchFollowList };
+const fetchUserRechirps = async ({ userId, before = null, limit = 20 }) => {
+    const res = await api.get(`/users/${userId}/rechirps`, { params: { limit, before } });
+    return res.data;
+};
+
+export { fetchUser, fetchUserChirps, fetchFollowList, fetchUserRechirps };

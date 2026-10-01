@@ -110,9 +110,13 @@ router.post("/", protect, async (req, res) => {
     }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', protect, async (req, res) => {
     const { id } = req.params;
     const { content } = req.body;
+
+    if(!req.user?.id) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     if (!content) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -133,8 +137,12 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', protect, async (req, res) => {
     const { id } = req.params;
+
+    if(!req.user?.id) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     try {
         const deletedChirp = await pool.query('DELETE FROM chirps WHERE id = $1 RETURNING *', [id]);

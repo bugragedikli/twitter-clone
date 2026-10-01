@@ -47,6 +47,8 @@ export default function ChirpList({ query }) {
                         timestamp={chirp.created_at}
                         likeCount={chirp.like_count}
                         likedByMe={chirp.liked_by_me}
+                        rechirpCount={chirp.rechirp_count}
+                        rechirpedByMe={chirp.rechirped_by_me}
                      />
                 ))}
 

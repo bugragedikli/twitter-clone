@@ -6,7 +6,11 @@ export async function getChirps({ limit, before = null, viewerId = null, authorI
             (SELECT COUNT(*) FROM likes l WHERE l.chirp_id = c.id)::int AS like_count,
             EXISTS (
                 SELECT 1 FROM likes l WHERE l.chirp_id = c.id AND l.user_id = $3
-            ) AS liked_by_me
+            ) AS liked_by_me,
+            (SELECT COUNT(*) FROM rechirps r WHERE r.chirp_id = c.id)::int AS rechirp_count,
+            EXISTS (
+                SELECT 1 FROM rechirps r WHERE r.chirp_id = c.id AND r.user_id = $3
+            ) AS rechirped_by_me
         FROM chirps c
         JOIN users u ON c.user_id = u.id
         WHERE ($2::int IS NULL

@@ -2,6 +2,7 @@ import express from 'express';
 import pool from '../config/database.js';
 import { optionalAuth } from '../middleware/auth.js';
 import { getFollowList } from '../services/follows.service.js';
+import { getRechirpedChirps } from '../services/rechirps.service.js';
 
 const router = express.Router();
 
@@ -59,5 +60,23 @@ const sendFollowList = async (req, res, type) => {
 
 router.get('/:id/followers', optionalAuth, (req, res) => sendFollowList(req, res, 'followers'));
 router.get('/:id/followings', optionalAuth, (req, res) => sendFollowList(req, res, 'followings'));
+
+router.get('/:id/rechirps', optionalAuth, async (req, res) => {
+    const userId = Number(req.params.id);
+    const limit = Math.min(Number(req.query.limit) || 20, 50);
+    const before = req.query.before ? Number(req.query.before) : null;
+
+    if (!Number.isInteger(userId) || (before !== null && !Number.isInteger(before))) {
+        return res.status(400).json({ error: 'Invalid parameters' });
+    }
+
+    try {
+        res.json(await getRechirpedChirps({ userId, limit, before, viewerId: req.user?.id ?? null }));
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 
 export default router;
