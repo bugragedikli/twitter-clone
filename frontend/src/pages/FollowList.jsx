@@ -37,8 +37,8 @@ const FollowList = ({ type, user }) => {
             </div>
 
             <div className="flex">
-                <Link to={`/${username}/followers`} className={tabClass('followers')}>Followers</Link>
                 <Link to={`/${username}/followings`} className={tabClass('followings')}>Followings</Link>
+                <Link to={`/${username}/followers`} className={tabClass('followers')}>Followers</Link>
             </div>
 
             {isPending ? (
