@@ -38,22 +38,10 @@ export default function ChirpList({user, query }) {
         return (
             <>
                 {chirps.map((chirp) => (
-                    <Chirp key={`${chirp.id}-${chirp.rechirper_id ?? 'original'}`}
+                    <Chirp 
+                        key={`${chirp.id}-${chirp.rechirped_by_id ?? 'original'}`}
                         user={user}
-                        chirpId={chirp.id}
-                        profileImage={chirp.profile_image_url}
-                        displayName={chirp.display_name}
-                        username={chirp.username}
-                        content={chirp.content}
-                        timestamp={chirp.created_at}
-                        likeCount={chirp.like_count}
-                        likedByMe={chirp.liked_by_me}
-                        rechirpCount={chirp.rechirp_count}
-                        rechirpedByMe={chirp.rechirped_by_me}
-                        rechirpedById={chirp.rechirped_by_id}
-                        rechirpedByDisplayName={chirp.rechirped_by_display_name}
-                        rechirpedByUsername={chirp.rechirped_by_username}
-                        quotedChirp={chirp.quoted_chirp}
+                        chirp={chirp}
                      />
                 ))}
 

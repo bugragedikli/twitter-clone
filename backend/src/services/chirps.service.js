@@ -1,6 +1,6 @@
 import pool from '../config/database.js';
 
-export async function getChirps({ limit, before = null, viewerId = null, authorId = null, followingOf = null }) {
+export async function getChirps({ limit, before = null, viewerId = null, authorId = null }) {
     const result = await pool.query(`
         SELECT c.*, u.display_name, u.username, u.profile_image_url,
             (SELECT COUNT(*) FROM likes l WHERE l.chirp_id = c.id)::int AS like_count,
@@ -26,12 +26,9 @@ export async function getChirps({ limit, before = null, viewerId = null, authorI
         WHERE ($2::int IS NULL
                 OR (c.created_at, c.id) < (SELECT created_at, id FROM chirps WHERE id = $2))
             AND ($4::int IS NULL OR c.user_id = $4)
-            AND ($5::int IS NULL OR c.user_id IN (
-                SELECT following_id FROM follows WHERE follower_id = $5
-            ))
         ORDER BY c.created_at DESC, c.id DESC
         LIMIT $1`,
-        [limit + 1, before, viewerId, authorId, followingOf]);
+        [limit + 1, before, viewerId, authorId]);
 
     const hasMore = result.rows.length > limit;
     const chirps = hasMore ? result.rows.slice(0, limit) : result.rows;
@@ -48,7 +45,8 @@ export async function getFollowingFeed({ viewerId, limit, beforeTime = null, bef
             -- chirps written by people the viewer follows
             SELECT c.id AS chirp_id, c.created_at AS sort_time, NULL::int AS rechirper_id
             FROM chirps c
-            WHERE c.user_id IN (SELECT following_id FROM follows WHERE follower_id = $1)
+            WHERE c.user_id = $1 
+                OR c.user_id IN (SELECT following_id FROM follows WHERE follower_id = $1)
 
             UNION ALL
 
@@ -61,7 +59,6 @@ export async function getFollowingFeed({ viewerId, limit, beforeTime = null, bef
         )
         SELECT c.*, u.display_name, u.username, u.profile_image_url,
             f.sort_time::text AS sort_time,
-            f.rechirper_id,
             ru.id          AS rechirped_by_id,
             ru.username     AS rechirped_by_username,
             ru.display_name AS rechirped_by_display_name,
@@ -100,7 +97,7 @@ export async function getFollowingFeed({ viewerId, limit, beforeTime = null, bef
     return {
         chirps,
         nextCursor: hasMore
-            ? { time: last.sort_time, chirpId: last.id, by: last.rechirper_id ?? 0 }
+            ? { time: last.sort_time, chirpId: last.id, by: last.rechirped_by_id ?? 0 }
             : null
     };
 }

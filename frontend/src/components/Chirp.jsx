@@ -1,4 +1,4 @@
-import React, {useId, useState} from 'react';
+import {useId, useState} from 'react';
 import DefaultProfileImage from '../assets/default-profile.jpg';
 import { BsHeart, BsHeartFill, BsChatSquare, BsSend, BsArrowRepeat, BsBookmark, BsPencil } from "react-icons/bs";
 import formatTimestamp from '../utils/TimestampFormatter';
@@ -7,7 +7,7 @@ import { useToggleRechirp } from '../hooks/useToggleRechirp';
 import { Link } from 'react-router-dom';
 import QuotePanel from './QuotePanel';
 
-export default function Chirp({ user, chirpId, profileImage, displayName, username, content, timestamp, likeCount, likedByMe, rechirpCount, rechirpedByMe, rechirpedById, rechirpedByDisplayName, rechirpedByUsername, quotedChirp }) {
+export default function Chirp({ user, chirp }) {
     const { mutate: toggleLike } = useToggleLike();
     const { mutate: toggleRechirp } = useToggleRechirp();
 
@@ -15,49 +15,41 @@ export default function Chirp({ user, chirpId, profileImage, displayName, userna
     const rechirpPanelId = useId();
 
     const [isQuoteOpen, setIsQuoteOpen] = useState(false);
-
+    
     const rechirpedByInfo = () => {
-        if (rechirpedById && user?.id === rechirpedById) {
-            return (
-                <p className="text-sm text-gray-500 -mt-2 mb-1 ml-6">
-                    <Link to={`/${rechirpedByUsername}`} className="flex hover:underline">
-                        <BsArrowRepeat className="w-4 h-4 mr-2" /> Rechirped by you
-                    </Link>
-                </p>
-            );
-        }
+        if (!chirp.rechirped_by_id) return null;
 
-        if (rechirpedByDisplayName && rechirpedByUsername) {
-            return (
-                <p className="text-sm text-gray-500 -mt-2 mb-1 ml-6">
-                    <Link to={`/${rechirpedByUsername}`} className="flex hover:underline">
-                        <BsArrowRepeat className="w-4 h-4 mr-2" /> Rechirped by {rechirpedByDisplayName}
-                    </Link>
-                </p>
-            );
-        }
+        const label = user?.id === chirp.rechirped_by_id ? 'you' : chirp.rechirped_by_display_name;
+
+        return (
+            <p className="text-sm text-gray-500 -mt-2 mb-1 ml-6">
+                <Link to={`/${chirp.rechirped_by_username}`} className="flex hover:underline">
+                    <BsArrowRepeat className="w-4 h-4 mr-2" /> Rechirped by {label}
+                </Link>
+            </p>
+        );
     }
 
     return (
         <div className="border-t border-b border-(--accent-color) px-4 pt-4">
             {rechirpedByInfo()}
             <div className="flex gap-2 leading-5">
-                <img src={profileImage || DefaultProfileImage} alt="Profile" className="w-10 h-10 rounded-full" />
+                <img src={chirp.profile_image_url || DefaultProfileImage} alt="Profile" className="w-10 h-10 rounded-full" />
                 <div className="min-w-0 w-full">
-                    <Link to={`/${username}`} className="hover:underline mr-2">{displayName}</Link>
-                    <Link to={`/${username}`} className="text-gray-500">@{username}</Link>
-                    <span className="text-gray-500"> · {formatTimestamp(timestamp)}</span>
-                    <p className="whitespace-pre-wrap wrap-break-word pr-2">{content}</p>
-                    {quotedChirp && (
+                    <Link to={`/${chirp.username}`} className="hover:underline mr-2">{chirp.display_name}</Link>
+                    <Link to={`/${chirp.username}`} className="text-gray-500">@{chirp.username}</Link>
+                    <span className="text-gray-500"> · {formatTimestamp(chirp.created_at)}</span>
+                    <p className="whitespace-pre-wrap wrap-break-word pr-2">{chirp.content}</p>
+                    {chirp.quoted_chirp && (
                         <div className="border border-(--accent-color) rounded-xl p-2 mt-4">
                             <div className="flex gap-2 items-center">
-                                <img src={quotedChirp.profile_image_url || DefaultProfileImage} alt="Profile" className="size-6 rounded-full" />
-                                <div className="flex items-baseline">
-                                    <p className="font-bold mr-2">{quotedChirp.display_name}</p> 
-                                    <p className="text-gray-500 text-sm">@{quotedChirp.username}</p>
+                                <img src={chirp.quoted_chirp.profile_image_url || DefaultProfileImage} alt="Profile" className="size-6 rounded-full" />
+                                <div className="flex items-baseline min-w-0 ">
+                                    <p className="font-bold mr-2 truncate">{chirp.quoted_chirp.display_name}</p> 
+                                    <p className="text-gray-500 text-sm truncate">@{chirp.quoted_chirp.username}</p>
                                 </div>
                             </div>
-                            <p className="mt-1 whitespace-pre-wrap wrap-break-word">{quotedChirp.content}</p>
+                            <p className="mt-1 whitespace-pre-wrap wrap-break-word">{chirp.quoted_chirp.content}</p>
                         </div>
                     )}
                     {/* Footer with action buttons */}
@@ -80,12 +72,12 @@ export default function Chirp({ user, chirpId, profileImage, displayName, userna
                         }}
                         >
                             <button 
-                            onClick={() => setIsRechirpOpen((prev) => !prev)}
+                            onClick={() => {setIsRechirpOpen((prev) => !prev)}}
                             aria-expanded={isRechirpOpen}
                             aria-controls={rechirpPanelId}
                             className="flex items-center gap-1 hover:text-green-400 hover:bg-green-400/10 px-2 py-1 rounded-full">
-                                <BsArrowRepeat className={`w-4 h-4 ${rechirpedByMe ? 'text-green-400' : ''}`} />
-                                <p className={rechirpedByMe ? 'text-green-400' : ''}>{rechirpCount}</p>
+                                <BsArrowRepeat className={`w-4 h-4 ${chirp.rechirped_by_me ? 'text-green-400' : ''}`} />
+                                <p className={chirp.rechirped_by_me ? 'text-green-400' : ''}>{chirp.rechirp_count}</p>
                             </button>
 
                             {isRechirpOpen && (
@@ -95,12 +87,12 @@ export default function Chirp({ user, chirpId, profileImage, displayName, userna
                                 >
                                     <button
                                         onClick={() => {
-                                            toggleRechirp({ chirpId, rechirped: !rechirpedByMe });
+                                            toggleRechirp({ chirpId: chirp.id, rechirped: !chirp.rechirped_by_me });
                                             setIsRechirpOpen(false);
                                         }}
                                         className="flex w-full px-4 py-4 text-left hover:bg-(--accent-color-hover) transition-colors duration-300 rounded-t-2xl">
                                         <BsArrowRepeat className="w-4 h-4 mr-2" />
-                                        {rechirpedByMe ? 'Undo rechirp' : 'Rechirp'}
+                                        {chirp.rechirped_by_me ? 'Undo rechirp' : 'Rechirp'}
                                     </button>
                                     <button 
                                     onClick={() => {
@@ -114,22 +106,14 @@ export default function Chirp({ user, chirpId, profileImage, displayName, userna
                                     </button>
                                 </div>
                             )}
-
-                            {isQuoteOpen && (
-                                <QuotePanel
-                                    user={user}
-                                    chirp={{ id: chirpId, displayName, username, profileImage, content }}
-                                    onClose={() => setIsQuoteOpen(false)}
-                                />
-                            )}
                         </div>
                         
                         {/* Like button with toggle functionality */}
                         <button 
-                        onClick={() => toggleLike({ chirpId, liked: !likedByMe })}
+                        onClick={() => toggleLike({ chirpId: chirp.id, liked: !chirp.liked_by_me })}
                         className="flex items-center gap-1 hover:text-red-500 hover:bg-red-500/10 px-2 py-1 rounded-full">
-                            {likedByMe ? <BsHeartFill className="w-4 h-4 text-red-500"/> : <BsHeart className="w-4 h-4"/>}
-                            <p className={likedByMe ? 'text-red-500' : ''}>{likeCount}</p>
+                            {chirp.liked_by_me ? <BsHeartFill className="w-4 h-4 text-red-500"/> : <BsHeart className="w-4 h-4"/>}
+                            <p className={chirp.liked_by_me ? 'text-red-500' : ''}>{chirp.like_count}</p>
                         </button>
 
                         {/* Bookmark and Send buttons */}
@@ -144,6 +128,13 @@ export default function Chirp({ user, chirpId, profileImage, displayName, userna
                     </div>
                 </div>
             </div>
+            {isQuoteOpen && (
+                <QuotePanel
+                    user={user}
+                    chirp={chirp}
+                    onClose={() => setIsQuoteOpen(false)}
+                />
+            )}
         </div>
     );
 }

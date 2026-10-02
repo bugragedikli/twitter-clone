@@ -36,5 +36,10 @@ export function useToggleRechirp() {
         onError: (_error, _variables, context) => {
             context?.previous.forEach(([key, data]) => queryClient.setQueryData(key, data));
         },
+
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['chirps', 'following'] });
+            queryClient.invalidateQueries({ queryKey: ['chirps', 'rechirps'] });
+        },
     });
 }

@@ -59,9 +59,19 @@ router.get('/:id', optionalAuth, async (req, res) => {
                 (SELECT COUNT(*) FROM likes l WHERE l.chirp_id = c.id)::int AS like_count,
                 EXISTS (
                     SELECT 1 FROM likes l WHERE l.chirp_id = c.id AND l.user_id = $2
-                ) AS liked_by_me
+                ) AS liked_by_me,
+                CASE WHEN q.id IS NULL THEN NULL ELSE json_build_object(
+                    'id',                q.id,
+                    'content',           q.content,
+                    'created_at',        q.created_at,
+                    'username',          qu.username,
+                    'display_name',      qu.display_name,
+                    'profile_image_url', qu.profile_image_url
+                ) END AS quoted_chirp
             FROM chirps c 
             JOIN users u ON c.user_id = u.id 
+            LEFT JOIN chirps q  ON q.id  = c.quote_of_id
+            LEFT JOIN users  qu ON qu.id = q.user_id
             WHERE c.id = $1`
             , [id, userId]);
         if (chirp.rows.length === 0) {
@@ -97,9 +107,19 @@ router.post("/", protect, async (req, res) => {
                 VALUES ($1, $2, $3)
                 RETURNING *
             )
-            SELECT inserted.*, u.display_name, u.username, u.profile_image_url, 0 AS like_count, false AS liked_by_me
+            SELECT inserted.*, u.display_name, u.username, u.profile_image_url, 0 AS like_count, false AS liked_by_me,
+            CASE WHEN q.id IS NULL THEN NULL ELSE json_build_object(
+                'id',                q.id,
+                'content',           q.content,
+                'created_at',        q.created_at,
+                'username',          qu.username,
+                'display_name',      qu.display_name,
+                'profile_image_url', qu.profile_image_url
+            ) END AS quoted_chirp
             FROM inserted
-            JOIN users u ON inserted.user_id = u.id`,
+            JOIN users u ON inserted.user_id = u.id
+            LEFT JOIN chirps q  ON q.id  = inserted.quote_of_id
+            LEFT JOIN users  qu ON qu.id = q.user_id`,  
             [user_id, content, quote_of_id]
         );
 
