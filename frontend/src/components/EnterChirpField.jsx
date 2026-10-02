@@ -11,7 +11,7 @@ export default function EnterChirpField({ user }) {
         if (!trimmed) return;
 
         mutate(
-            { user_id: user.id, content: trimmed },
+            { content: trimmed },
             { onSuccess: () => setContent('') }
         );
     };

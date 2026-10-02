@@ -1,7 +1,7 @@
 import { ClipLoader } from "react-spinners";
 import Chirp from './Chirp';
 
-export default function ChirpList({ query }) {
+export default function ChirpList({user, query }) {
     const {
         data: chirps,
         isPending,
@@ -38,7 +38,8 @@ export default function ChirpList({ query }) {
         return (
             <>
                 {chirps.map((chirp) => (
-                    <Chirp key={chirp.id}
+                    <Chirp key={`${chirp.id}-${chirp.rechirper_id ?? 'original'}`}
+                        user={user}
                         chirpId={chirp.id}
                         profileImage={chirp.profile_image_url}
                         displayName={chirp.display_name}
@@ -49,6 +50,10 @@ export default function ChirpList({ query }) {
                         likedByMe={chirp.liked_by_me}
                         rechirpCount={chirp.rechirp_count}
                         rechirpedByMe={chirp.rechirped_by_me}
+                        rechirpedById={chirp.rechirped_by_id}
+                        rechirpedByDisplayName={chirp.rechirped_by_display_name}
+                        rechirpedByUsername={chirp.rechirped_by_username}
+                        quotedChirp={chirp.quoted_chirp}
                      />
                 ))}
 

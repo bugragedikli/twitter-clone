@@ -1,7 +1,7 @@
 import express from "express";
 import pool from '../config/database.js';
 import { protect, optionalAuth } from "../middleware/auth.js";
-import { getChirps } from "../services/chirps.service.js";
+import { getChirps, getFollowingFeed } from "../services/chirps.service.js";
 
 const router = express.Router();
 
@@ -29,25 +29,21 @@ router.get('/', optionalAuth, async (req, res) => {
     }
 });
 
-router.get('/following', optionalAuth, async (req, res) => {
+router.get('/following', protect, async (req, res) => {
     const limit = Math.min(Number(req.query.limit) || 20, 50);
-    const before = req.query.before ? Number(req.query.before) : null;
-    const authorId = req.query.authorId ? Number(req.query.authorId) : null;
-    const viewerId = req.user?.id ?? null;
+    const beforeTime = req.query.beforeTime ? new Date(req.query.beforeTime) : null;
+    const beforeId = req.query.beforeId ? Number(req.query.beforeId) : null;
+    const beforeBy = req.query.beforeBy ? Number(req.query.beforeBy) : null;
 
-    if (before !== null && !Number.isInteger(before)) {
+    if (beforeTime !== null && (!Number.isInteger(beforeId) || !Number.isInteger(beforeBy))) {
         return res.status(400).json({ error: 'Invalid cursor' });
     }
 
     try {
-        const result = await getChirps({ limit, before, viewerId, authorId, followingOf: viewerId });
-        
-        res.json({
-            chirps: result.chirps,
-            nextCursor: result.nextCursor,
-        });
+        const result = await getFollowingFeed({ viewerId: req.user.id, limit, beforeTime, beforeId, beforeBy });
+        res.json(result);
     }
-    catch (error){
+    catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
@@ -79,7 +75,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
 });
 
 router.post("/", protect, async (req, res) => {
-    const { content } = req.body;
+    const { content, quote_of_id } = req.body;
     const user_id = req.user?.id;
 
     if(!user_id) {
@@ -93,19 +89,20 @@ router.post("/", protect, async (req, res) => {
     try {
         const newChirp = await pool.query(
             `WITH inserted AS (
-                INSERT INTO chirps (user_id, content)
-                VALUES ($1, $2)
+                INSERT INTO chirps (user_id, content, quote_of_id)
+                VALUES ($1, $2, $3)
                 RETURNING *
             )
             SELECT inserted.*, u.display_name, u.username, u.profile_image_url, 0 AS like_count, false AS liked_by_me
             FROM inserted
             JOIN users u ON inserted.user_id = u.id`,
-            [user_id, content]
+            [user_id, content, quote_of_id]
         );
 
         res.status(201).json(newChirp.rows[0]);
     }
-    catch {
+    catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });

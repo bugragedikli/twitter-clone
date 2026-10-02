@@ -33,7 +33,7 @@ const Feed = ({user}) => {
             <EnterChirpField user={user} />
 
             <div className="border-t border-(--accent-color)">
-                <ChirpList query={useFeed(activeTab)} />
+                <ChirpList user={user} query={useFeed(activeTab)} />
             </div>
         </div>
     )

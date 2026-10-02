@@ -9,7 +9,6 @@ import { useUserRechirps } from '../hooks/useUserRechirps';
 import { ClipLoader } from "react-spinners";
 import { useProfile } from '../hooks/useProfile';
 import { useToggleFollow } from '../hooks/useToggleFollow';
-import Chirp from '../components/Chirp';
 
 const Profile = ({ user }) => {
     const { username } = useParams();
@@ -120,7 +119,7 @@ const Profile = ({ user }) => {
         <div>
             {tab === 'chirps' && 
             <div>
-                <ChirpList query={userChirpsQuery} />
+                <ChirpList user={user} query={userChirpsQuery} />
             </div>
             }
             {tab === 'replies' && 
@@ -130,7 +129,7 @@ const Profile = ({ user }) => {
             }
             {tab === 'rechirps' && 
             <div>
-                <ChirpList query={userRechirpsQuery} />
+                <ChirpList user={user} query={userRechirpsQuery} />
             </div>
             }
         </div>
