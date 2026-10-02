@@ -121,9 +121,10 @@ router.put('/:id', protect, async (req, res) => {
 
     try {
         const updatedChirp = await pool.query(
-            'UPDATE chirps SET content = $1 WHERE id = $2 RETURNING *',
-            [content, id]
+            'UPDATE chirps SET content = $1 WHERE id = $2 AND user_id = $3 RETURNING *',
+            [content, id, req.user.id]
         );
+
         if (updatedChirp.rows.length === 0) {
             return res.status(404).json({ error: 'Chirp not found' });
         }
@@ -142,10 +143,13 @@ router.delete('/:id', protect, async (req, res) => {
     }
 
     try {
-        const deletedChirp = await pool.query('DELETE FROM chirps WHERE id = $1 RETURNING *', [id]);
+        const deletedChirp = await pool.query('DELETE FROM chirps WHERE id = $1 AND user_id = $2 RETURNING *'
+            ,[id, req.user.id]);
+
         if (deletedChirp.rows.length === 0) {
             return res.status(404).json({ error: 'Chirp not found' });
         }
+
         res.json({ message: 'Chirp deleted successfully' });
     }
     catch {
