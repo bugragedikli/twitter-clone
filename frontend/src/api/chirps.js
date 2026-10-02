@@ -21,4 +21,9 @@ const createChirp = async ({content, quote_of_id}) => {
     return res.data;
 }
 
-export { fetchChirps, createChirp };
+const fetchChirpById = async (chirpId) => {
+    const res = await api.get(`/chirps/${chirpId}`);
+    return res.data;
+}
+
+export { fetchChirps, createChirp, fetchChirpById };

@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
 import FollowList from './pages/FollowList';
+import ChirpPage from './pages/ChirpPage';
 import NotFound from './components/NotFound';
 import { getMe } from './api/auth';
 import { useQueryClient } from '@tanstack/react-query';
@@ -63,6 +64,7 @@ function App() {
           <Route element={ <Home user={user} setUser={changeUser} />}>
             <Route path="/" element={<Feed user={user} />} />
             <Route path="/:username" element={<Profile user={user} />} />
+            <Route path="/:username/status/:chirpId" element={<ChirpPage user={user} />} />
             <Route path="/:username/followers" element={<FollowList type="followers" user={user} />} />
             <Route path="/:username/followings" element={<FollowList type="followings" user={user} />} />
             <Route path="*" element={<NotFound />} />

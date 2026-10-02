@@ -36,5 +36,9 @@ export function useToggleLike() {
         onError: (_error, _variables, context) => {
             context?.previous.forEach(([key, data]) => queryClient.setQueryData(key, data));
         },
+
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['chirp'] });
+        }
     });
 }

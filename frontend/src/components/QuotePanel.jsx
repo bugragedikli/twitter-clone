@@ -27,7 +27,10 @@ export default function QuotePanel({ user, chirp, onClose }) {
     return createPortal(
         <div
             className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 pt-16"
-            onClick={onClose}
+            onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+            }}
         >
             <div
             className="w-full max-w-xl bg-(--background-color) rounded-2xl"

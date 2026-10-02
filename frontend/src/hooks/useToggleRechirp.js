@@ -40,6 +40,7 @@ export function useToggleRechirp() {
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['chirps', 'following'] });
             queryClient.invalidateQueries({ queryKey: ['chirps', 'rechirps'] });
+            queryClient.invalidateQueries({ queryKey: ['chirp'] });
         },
     });
 }

@@ -32,7 +32,7 @@ const Feed = ({user}) => {
 
     useEffect(() => {
         window.scrollTo(0, scrollPositions[activeTab] ?? 0);
-    }, []);
+    });
     
     return (
         <div>
