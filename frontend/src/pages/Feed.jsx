@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
+import { flushSync } from 'react-dom';
 import EnterChirpField from '../components/EnterChirpField';
 import { useFeed } from '../hooks/useFeed';
 import ChirpList from '../components/ChirpList';
+
+const scrollPositions = {};
 
 const Feed = ({user}) => {
     const [activeTab, setActiveTab] = useState(
@@ -9,9 +12,27 @@ const Feed = ({user}) => {
     );
 
     const changeTab = (tab) => {
-        setActiveTab(tab);
+        if (tab === activeTab) return;
+
+        scrollPositions[activeTab] = window.scrollY;
+
+        flushSync(() => setActiveTab(tab));
+        window.scrollTo(0, scrollPositions[tab] ?? 0);
+
         localStorage.setItem('activeTab', tab);
     };
+
+    useLayoutEffect(() => {
+        const onScroll = () => {
+            scrollPositions[activeTab] = window.scrollY;
+        };
+        window.addEventListener('scroll', onScroll);
+        return () => window.removeEventListener('scroll', onScroll);
+    }, [activeTab]);
+
+    useEffect(() => {
+        window.scrollTo(0, scrollPositions[activeTab] ?? 0);
+    }, []);
     
     return (
         <div>
