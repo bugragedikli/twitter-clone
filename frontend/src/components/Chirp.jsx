@@ -17,7 +17,7 @@ export default function Chirp({ user, chirpId, profileImage, displayName, userna
     const [isQuoteOpen, setIsQuoteOpen] = useState(false);
 
     const rechirpedByInfo = () => {
-        if (rechirpedById && user.id === rechirpedById) {
+        if (rechirpedById && user?.id === rechirpedById) {
             return (
                 <p className="text-sm text-gray-500 -mt-2 mb-1 ml-6">
                     <Link to={`/${rechirpedByUsername}`} className="flex hover:underline">

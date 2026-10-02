@@ -86,6 +86,10 @@ router.post("/", protect, async (req, res) => {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    if (quote_of_id && !Number.isInteger(quote_of_id)) {
+        return res.status(400).json({ error: 'Invalid quote_of_id' });
+    }
+
     try {
         const newChirp = await pool.query(
             `WITH inserted AS (
@@ -98,6 +102,10 @@ router.post("/", protect, async (req, res) => {
             JOIN users u ON inserted.user_id = u.id`,
             [user_id, content, quote_of_id]
         );
+
+        if (newChirp.rows.length === 0) {
+            return res.status(404).json({ error: 'Failed to create chirp' });
+        }
 
         res.status(201).json(newChirp.rows[0]);
     }
