@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { BsArrowLeft } from "react-icons/bs";
 import { useChirp } from "../hooks/useChirp";
@@ -17,6 +18,10 @@ const ChirpPage = ({user}) => {
 
     const { mutate: toggleLike } = useToggleLike();
     const { mutate: toggleRechirp } = useToggleRechirp();
+
+    const [content, setContent] = useState('');
+    const [isExpanded, setIsExpanded] = useState(false);
+
 
     if (isPending) {
         return <div className="flex justify-center p-10"><ClipLoader color="#ffffff" /></div>;
@@ -72,7 +77,7 @@ const ChirpPage = ({user}) => {
             </div>
             
             {/* Action buttons */}
-            <div className="flex justify-between gap-4 m-2 py-2 border-b border-t border-(--accent-color) text-gray-500">
+            <div className="flex justify-between gap-4 mx-2 py-2 border-b border-t border-(--accent-color) text-gray-500">
                 {/* Comment button with placeholder count */}
                 <CommentButton />
 
@@ -88,13 +93,46 @@ const ChirpPage = ({user}) => {
             </div>
 
             {/* Send Comment Section */}
-            <div className="p-2">
-                Send Comment
+            <div className="p-4">
+                <div className="flex items-center gap-2">
+                    <img src={user.profile_image_url || DefaultProfileImage} alt="Profile" className="w-10 h-10 rounded-full" />
+                    <textarea
+                        onFocus={() => setIsExpanded(true)}
+                        value={content}
+                        rows={1}
+                        onChange={(e) => {
+                            setContent(e.target.value);
+                            e.target.style.height = 'auto';
+                            e.target.style.height = `${e.target.scrollHeight}px`;
+                            }
+                        }
+                        placeholder="What's happening?"
+                        className="w-full bg-(--background-color) text-xl font-light text-white p-2 rounded-lg focus:outline-none resize-none overflow-hidden"
+                    />
+                    {!isExpanded && (
+                        <button
+                            className="bg-(--primary-color) text-white leading-4.5 px-4 py-2 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={!content.trim()}
+                        >
+                            Reply
+                        </button>
+                    )}
+                </div>
+                {isExpanded && (
+                <div className="flex justify-end">
+                    <button
+                        className="bg-(--primary-color) text-white leading-4.5 px-4 py-2 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!content.trim()}
+                    >
+                        Reply
+                    </button>
+                </div>
+            )}
             </div>
         </div>
         {/* Comments Section */}
         <div className="border-t border-(--accent-color) p-4">
-
+            
         </div>
         </>
     )
