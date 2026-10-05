@@ -11,6 +11,9 @@ import BookmarkButton from "../components/BookmarkButton";
 import SendButton from "../components/SendButton";
 import { useToggleLike } from "../hooks/useToggleLike";
 import { useToggleRechirp } from "../hooks/useToggleRechirp";
+import { useCreateReply } from "../hooks/useCreateReply";
+import { useReplies } from "../hooks/useReplies";
+import ChirpList from "../components/ChirpList";
 
 const ChirpPage = ({user}) => {
     const { chirpId } = useParams();
@@ -21,6 +24,18 @@ const ChirpPage = ({user}) => {
 
     const [content, setContent] = useState('');
     const [isExpanded, setIsExpanded] = useState(false);
+
+    const repliesQuery = useReplies(chirpId);
+    const { mutate: createReply, isPending: isReplying } = useCreateReply(chirpId);
+
+    const handleReply = () => {
+        createReply(content.trim(), {
+            onSuccess: () => {
+                setContent('');
+                setIsExpanded(false);
+            },
+        });
+    };
 
 
     if (isPending) {
@@ -79,7 +94,7 @@ const ChirpPage = ({user}) => {
             {/* Action buttons */}
             <div className="flex justify-between gap-4 mx-2 py-2 border-b border-t border-(--accent-color) text-gray-500">
                 {/* Comment button with placeholder count */}
-                <CommentButton />
+                <CommentButton chirp={chirp} />
 
                 {/* Rechirp button with toggle functionality */}
                 <RechirpButton chirp={chirp} toggleRechirp={toggleRechirp} user={user} />
@@ -123,6 +138,7 @@ const ChirpPage = ({user}) => {
                     <button
                         className="bg-(--primary-color) text-white leading-4.5 px-4 py-2 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={!content.trim()}
+                        onClick={handleReply}
                     >
                         Reply
                     </button>
@@ -131,8 +147,8 @@ const ChirpPage = ({user}) => {
             </div>
         </div>
         {/* Comments Section */}
-        <div className="border-t border-(--accent-color) p-4">
-            
+        <div className="border-t border-(--accent-color)">
+            <ChirpList user={user} query={repliesQuery} />
         </div>
         </>
     )

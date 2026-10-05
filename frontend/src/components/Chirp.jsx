@@ -54,7 +54,7 @@ export default function Chirp({ user, chirp }) {
                     {/* Footer with action buttons */}
                     <div className="flex justify-between gap-4 py-2 text-gray-500">
                         {/* Comment button with placeholder count */}
-                        <CommentButton />
+                        <CommentButton chirp={chirp} />
 
                         {/* Rechirp button with toggle functionality */}
                         <RechirpButton chirp={chirp} toggleRechirp={toggleRechirp} user={user} />

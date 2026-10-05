@@ -16,8 +16,8 @@ const fetchChirps = async ({ tab, before, limit }) => {
     return res.data;
 };
 
-const createChirp = async ({content, quote_of_id}) => {
-    const res = await api.post('/chirps', {content, quote_of_id });
+const createChirp = async ({content, quote_of_id, reply_to_id}) => {
+    const res = await api.post('/chirps', {content, quote_of_id, reply_to_id });
     return res.data;
 }
 
@@ -26,4 +26,9 @@ const fetchChirpById = async (chirpId) => {
     return res.data;
 }
 
-export { fetchChirps, createChirp, fetchChirpById };
+const fetchReplies = async ({ chirpId, before, limit }) => {
+    const res = await api.get(`/chirps/${chirpId}/replies`, { params: { before, limit } });
+    return res.data;
+}
+
+export { fetchChirps, createChirp, fetchChirpById, fetchReplies };

@@ -1,6 +1,6 @@
 import pool from '../config/database.js';
 
-export async function getChirps({ limit, before = null, viewerId = null, authorId = null }) {
+export async function getChirps({ limit, before = null, viewerId = null, authorId = null, replyTo = null }) {
     const result = await pool.query(`
         SELECT c.*, u.display_name, u.username, u.profile_image_url,
             (SELECT COUNT(*) FROM likes l WHERE l.chirp_id = c.id)::int AS like_count,
@@ -11,6 +11,7 @@ export async function getChirps({ limit, before = null, viewerId = null, authorI
             EXISTS (
                 SELECT 1 FROM rechirps r WHERE r.chirp_id = c.id AND r.user_id = $3
             ) AS rechirped_by_me,
+            (SELECT COUNT(*) FROM chirps rp WHERE rp.reply_to_id = c.id)::int AS reply_count,
             CASE WHEN q.id IS NULL THEN NULL ELSE json_build_object(
                 'id',                q.id,
                 'content',           q.content,
@@ -26,9 +27,10 @@ export async function getChirps({ limit, before = null, viewerId = null, authorI
         WHERE ($2::int IS NULL
                 OR (c.created_at, c.id) < (SELECT created_at, id FROM chirps WHERE id = $2))
             AND ($4::int IS NULL OR c.user_id = $4)
+            AND (($5::int IS NULL AND c.reply_to_id IS NULL) OR c.reply_to_id = $5)
         ORDER BY c.created_at DESC, c.id DESC
         LIMIT $1`,
-        [limit + 1, before, viewerId, authorId]);
+        [limit + 1, before, viewerId, authorId, replyTo]);
 
     const hasMore = result.rows.length > limit;
     const chirps = hasMore ? result.rows.slice(0, limit) : result.rows;
@@ -70,6 +72,7 @@ export async function getFollowingFeed({ viewerId, limit, beforeTime = null, bef
             EXISTS (
                 SELECT 1 FROM rechirps r2 WHERE r2.chirp_id = c.id AND r2.user_id = $1
             ) AS rechirped_by_me,
+            (SELECT COUNT(*) FROM chirps rp WHERE rp.reply_to_id = c.id)::int AS reply_count,
             CASE WHEN q.id IS NULL THEN NULL ELSE json_build_object(
                 'id',                q.id,
                 'content',           q.content,

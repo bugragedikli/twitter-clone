@@ -64,6 +64,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
                 EXISTS (
                     SELECT 1 FROM rechirps r2 WHERE r2.chirp_id = c.id AND r2.user_id = $2
                 ) AS rechirped_by_me,
+                (SELECT COUNT(*) FROM chirps rp WHERE rp.reply_to_id = c.id)::int AS reply_count,
                 CASE WHEN q.id IS NULL THEN NULL ELSE json_build_object(
                     'id',                q.id,
                     'content',           q.content,
@@ -88,8 +89,29 @@ router.get('/:id', optionalAuth, async (req, res) => {
     }
 });
 
+// Get replies to a specific chirp
+router.get('/:id/replies', optionalAuth, async (req, res) => {
+    const replyTo = Number(req.params.id);
+    const limit = Math.min(Number(req.query.limit) || 20, 50);
+    const before = req.query.before ? Number(req.query.before) : null;
+
+    if (!Number.isInteger(replyTo) || (before !== null && !Number.isInteger(before))) {
+        return res.status(400).json({ error: 'Invalid parameters' });
+    }
+
+    try {
+        const result = await getChirps({ limit, before, viewerId: req.user?.id ?? null, replyTo });
+        res.json(result);
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
 router.post("/", protect, async (req, res) => {
-    const { content, quote_of_id } = req.body;
+    const { content, quote_of_id, reply_to_id } = req.body;
     const user_id = req.user?.id;
 
     if(!user_id) {
@@ -104,17 +126,23 @@ router.post("/", protect, async (req, res) => {
         return res.status(400).json({ error: 'Invalid quote_of_id' });
     }
 
+    if (reply_to_id && !Number.isInteger(reply_to_id)) {
+        return res.status(400).json({ error: 'Invalid reply_to_id' });
+    }
+
     try {
         const newChirp = await pool.query(
             `WITH inserted AS (
-                INSERT INTO chirps (user_id, content, quote_of_id)
-                VALUES ($1, $2, $3)
+                INSERT INTO chirps (user_id, content, quote_of_id, reply_to_id)
+                VALUES ($1, $2, $3, $4)
                 RETURNING *
             )
             SELECT inserted.*, u.display_name, u.username, u.profile_image_url, 
             0 AS like_count, 
             false AS liked_by_me,
             0 AS rechirp_count,
+            false AS rechirped_by_me,
+            0 AS reply_count,
                 CASE WHEN q.id IS NULL THEN NULL ELSE json_build_object(
                     'id',                q.id,
                     'content',           q.content,
@@ -127,7 +155,7 @@ router.post("/", protect, async (req, res) => {
             JOIN users u ON inserted.user_id = u.id
             LEFT JOIN chirps q  ON q.id  = inserted.quote_of_id
             LEFT JOIN users  qu ON qu.id = q.user_id`,  
-            [user_id, content, quote_of_id]
+            [user_id, content, quote_of_id, reply_to_id ?? null]
         );
 
         if (newChirp.rows.length === 0) {
