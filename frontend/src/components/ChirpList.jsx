@@ -1,7 +1,7 @@
 import { ClipLoader } from "react-spinners";
 import Chirp from './Chirp';
 
-export default function ChirpList({user, query }) {
+export default function ChirpList({ user, query }) {
     const {
         data: chirps,
         isPending,

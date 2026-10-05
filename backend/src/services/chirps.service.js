@@ -41,14 +41,15 @@ export async function getChirps({ limit, before = null, viewerId = null, authorI
     };
 }
 
-export async function getFollowingFeed({ viewerId, limit, beforeTime = null, beforeId = null, beforeBy = null }) {
+export async function getFollowingFeed({ viewerId, limit, beforeTime = null, beforeId = null, beforeBy = null}) {
     const result = await pool.query(`
         WITH feed AS (
             -- chirps written by people the viewer follows
             SELECT c.id AS chirp_id, c.created_at AS sort_time, NULL::int AS rechirper_id
             FROM chirps c
-            WHERE c.user_id = $1 
-                OR c.user_id IN (SELECT following_id FROM follows WHERE follower_id = $1)
+            WHERE c.reply_to_id IS NULL
+                AND (c.user_id = $1
+                    OR c.user_id IN (SELECT following_id FROM follows WHERE follower_id = $1))
 
             UNION ALL
 
