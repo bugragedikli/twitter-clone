@@ -65,6 +65,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
                     SELECT 1 FROM rechirps r2 WHERE r2.chirp_id = c.id AND r2.user_id = $2
                 ) AS rechirped_by_me,
                 (SELECT COUNT(*) FROM chirps rp WHERE rp.reply_to_id = c.id)::int AS reply_count,
+                pu.username AS reply_to_username,
                 CASE WHEN q.id IS NULL THEN NULL ELSE json_build_object(
                     'id',                q.id,
                     'content',           q.content,
@@ -77,6 +78,8 @@ router.get('/:id', optionalAuth, async (req, res) => {
             JOIN users u ON c.user_id = u.id 
             LEFT JOIN chirps q  ON q.id  = c.quote_of_id
             LEFT JOIN users  qu ON qu.id = q.user_id
+            LEFT JOIN chirps p  ON p.id  = c.reply_to_id 
+            LEFT JOIN users  pu ON pu.id = p.user_id
             WHERE c.id = $1`
             , [id, userId]);
         if (chirp.rows.length === 0) {

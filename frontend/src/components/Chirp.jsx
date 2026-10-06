@@ -28,6 +28,22 @@ export default function Chirp({ user, chirp }) {
         );
     }
 
+    const replyingToInfo = () => {
+        if (!chirp.reply_to_id || !chirp.reply_to_username) return null;
+
+        return (
+            <p className="text-gray-500 text-sm">
+                Replying to{' '}
+                <Link
+                    to={`/${chirp.reply_to_username}/status/${chirp.reply_to_id}`}
+                    className="text-(--primary-color) hover:underline"
+                >
+                    @{chirp.reply_to_username}
+                </Link>
+            </p>
+        );
+};
+
     return (
         <Link to={`/${chirp.username}/status/${chirp.id}`} className="block hover:bg-(--background-color) transition-colors duration-300">
         <div className="border-t border-b border-(--accent-color) px-4 pt-4">
@@ -38,6 +54,7 @@ export default function Chirp({ user, chirp }) {
                     <Link to={`/${chirp.username}`} className="hover:underline mr-2">{chirp.display_name}</Link>
                     <Link to={`/${chirp.username}`} className="text-gray-500">@{chirp.username}</Link>
                     <span className="text-gray-500"> · {formatTimestamp(chirp.created_at)}</span>
+                    {replyingToInfo()}
                     <p className="whitespace-pre-wrap wrap-break-word pr-2">{chirp.content}</p>
                     {chirp.quoted_chirp && (
                         <div className="border border-(--accent-color) rounded-xl p-2 mt-4">
