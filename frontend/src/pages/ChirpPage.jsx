@@ -148,6 +148,13 @@ const ChirpPage = ({user}) => {
         </div>
         {/* Comments Section */}
         <div className="border-t border-(--accent-color)">
+            {repliesQuery.isPending ? (
+                <div className="flex justify-center p-10"><ClipLoader color="#ffffff" /></div>
+            ) : repliesQuery.isError ? (
+                <div className="flex justify-center p-10">
+                    <p className="text-red-500">Error loading replies.</p>
+                </div>
+            ) : null}
             <ChirpList user={user} query={repliesQuery} />
         </div>
         </>

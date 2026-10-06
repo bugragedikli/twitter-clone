@@ -32,7 +32,7 @@ export default function ChirpList({ user, query }) {
         }
 
         if (chirps.length === 0) {
-            return <p className="p-4 text-center">No chirps to display.</p>;
+            return;
         }
 
         return (

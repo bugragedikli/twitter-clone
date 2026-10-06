@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import ChirpList from '../components/ChirpList';
 import { useUserChirps } from '../hooks/useUserChirps';
 import { useUserRechirps } from '../hooks/useUserRechirps';
+import { useUserReplies } from '../hooks/useUserReply';
 import { ClipLoader } from "react-spinners";
 import { useProfile } from '../hooks/useProfile';
 import { useToggleFollow } from '../hooks/useToggleFollow';
@@ -19,6 +20,7 @@ const Profile = ({ user }) => {
 
     const userChirpsQuery = useUserChirps(user?.id, profile?.id);
     const userRechirpsQuery = useUserRechirps(user?.id, profile?.id);
+    const userRepliesQuery = useUserReplies(user?.id, profile?.id);
 
 
     if (isPending) {
@@ -124,7 +126,7 @@ const Profile = ({ user }) => {
             }
             {tab === 'replies' && 
             <div>
-                <p>Replies content goes here...</p>
+                <ChirpList user={user} query={userRepliesQuery} />
             </div>
             }
             {tab === 'rechirps' && 

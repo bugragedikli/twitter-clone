@@ -3,6 +3,7 @@ import pool from '../config/database.js';
 import { optionalAuth } from '../middleware/auth.js';
 import { getFollowList } from '../services/follows.service.js';
 import { getRechirpedChirps } from '../services/rechirps.service.js';
+import { getReplyChirps } from '../services/replies.service.js';
 
 const router = express.Router();
 
@@ -72,6 +73,23 @@ router.get('/:id/rechirps', optionalAuth, async (req, res) => {
 
     try {
         res.json(await getRechirpedChirps({ userId, limit, before, viewerId: req.user?.id ?? null }));
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+router.get('/:id/replies', optionalAuth, async (req, res) => {
+    const userId = Number(req.params.id);
+    const limit = Math.min(Number(req.query.limit) || 20, 50);
+    const before = req.query.before ? Number(req.query.before) : null;
+
+    if (!Number.isInteger(userId) || (before !== null && !Number.isInteger(before))) {
+        return res.status(400).json({ error: 'Invalid parameters' });
+    }
+
+    try {
+        res.json(await getReplyChirps({ userId, limit, before, viewerId: null, reply_to_id: null }));
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });

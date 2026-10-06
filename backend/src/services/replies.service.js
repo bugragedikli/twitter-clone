@@ -1,17 +1,14 @@
 import pool from '../config/database.js';
 
-export async function getRechirpedChirps({ userId, limit, before = null, viewerId = null }) {
+export async function getReplyChirps({ userId, limit, before = null, viewerId = null}) {
     const result = await pool.query(`
         SELECT c.*, u.display_name, u.username, u.profile_image_url,
-            r.created_at AS rechirped_at,
-            ru.id          AS rechirped_by_id,
-            ru.username     AS rechirped_by_username,
-            ru.display_name AS rechirped_by_display_name,
+            pu.username AS reply_to_username,
             (SELECT COUNT(*) FROM likes l WHERE l.chirp_id = c.id)::int AS like_count,
             EXISTS (SELECT 1 FROM likes l WHERE l.chirp_id = c.id AND l.user_id = $3) AS liked_by_me,
             (SELECT COUNT(*) FROM rechirps r2 WHERE r2.chirp_id = c.id)::int AS rechirp_count,
             EXISTS (SELECT 1 FROM rechirps r2 WHERE r2.chirp_id = c.id AND r2.user_id = $3) AS rechirped_by_me,
-            (SELECT COUNT(*) FROM chirps c2 WHERE c2.reply_to_id = c.id)::int AS reply_count,
+            (SELECT COUNT(*) FROM chirps rp WHERE rp.reply_to_id = c.id)::int AS reply_count,
             CASE WHEN q.id IS NULL THEN NULL ELSE json_build_object(
                 'id',                q.id,
                 'content',           q.content,
@@ -20,18 +17,17 @@ export async function getRechirpedChirps({ userId, limit, before = null, viewerI
                 'display_name',      qu.display_name,
                 'profile_image_url', qu.profile_image_url
             ) END AS quoted_chirp
-        FROM rechirps r
-        JOIN chirps c ON r.chirp_id = c.id
-        JOIN users u ON c.user_id = u.id
-        JOIN users ru  ON r.user_id = ru.id
+        FROM chirps c
+        JOIN users u        ON u.id  = c.user_id
+        LEFT JOIN chirps p  ON p.id  = c.reply_to_id
+        LEFT JOIN users  pu ON pu.id = p.user_id
         LEFT JOIN chirps q  ON q.id  = c.quote_of_id
         LEFT JOIN users  qu ON qu.id = q.user_id
-        WHERE r.user_id = $4
+        WHERE c.user_id = $4
+            AND c.reply_to_id IS NOT NULL
             AND ($2::int IS NULL
-                OR (r.created_at, r.chirp_id) < (
-                    SELECT created_at, chirp_id FROM rechirps WHERE user_id = $4 AND chirp_id = $2
-                ))
-        ORDER BY r.created_at DESC, r.chirp_id DESC
+                OR (c.created_at, c.id) < (SELECT created_at, id FROM chirps WHERE id = $2))
+        ORDER BY c.created_at DESC, c.id DESC
         LIMIT $1`,
         [limit + 1, before, viewerId, userId]);
 
