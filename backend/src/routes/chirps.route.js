@@ -2,6 +2,7 @@ import express from "express";
 import pool from '../config/database.js';
 import { protect, optionalAuth } from "../middleware/auth.js";
 import { getChirps, getFollowingFeed } from "../services/chirps.service.js";
+import { MAX_CHIRP_LENGTH } from "../config/constants.js";
 
 const router = express.Router();
 
@@ -13,6 +14,14 @@ router.get('/', optionalAuth, async (req, res) => {
 
     if (before !== null && !Number.isInteger(before)) {
         return res.status(400).json({ error: 'Invalid cursor' });
+    }
+
+    if (limit !== null && (!Number.isInteger(limit) || limit < 0)) {
+        return res.status(400).json({ error: 'Limit must be a positive integer' });
+    }
+
+    if (authorId !== null && (!Number.isInteger(authorId) || authorId <= 0)) {
+        return res.status(400).json({ error: 'Invalid authorId' });
     }
 
     try {
@@ -53,6 +62,14 @@ router.get('/:id', optionalAuth, async (req, res) => {
     const { id } = req.params;
     const userId = req.user?.id ?? null;
 
+    if (!Number.isInteger(Number(id)) || id <= 0) {
+        return res.status(400).json({ error: 'Invalid chirp ID' });
+    }
+
+    if (id > 2147483647) {
+        return res.status(400).json({ error: 'Chirp ID exceeds maximum value' });
+    }
+
     try {
         const chirp = await pool.query(`
             SELECT c.*, u.display_name, u.username, u.profile_image_url,
@@ -82,9 +99,11 @@ router.get('/:id', optionalAuth, async (req, res) => {
             LEFT JOIN users  pu ON pu.id = p.user_id
             WHERE c.id = $1`
             , [id, userId]);
+
         if (chirp.rows.length === 0) {
             return res.status(404).json({ error: 'Chirp not found' });
         }
+
         res.json(chirp.rows[0]);
     }
     catch {
@@ -125,12 +144,28 @@ router.post("/", protect, async (req, res) => {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    if (quote_of_id && !Number.isInteger(quote_of_id)) {
+    if(typeof content !== 'string') {
+        return res.status(400).json({ error: 'Content must be a string' });
+    }
+    
+    if(content.trim().length === 0) {
+        return res.status(400).json({ error: 'Content cannot be empty' });
+    }
+
+    if (content.length > MAX_CHIRP_LENGTH) {
+        return res.status(400).json({ error: `Content cannot be longer than ${MAX_CHIRP_LENGTH} characters` });
+    }
+
+    if (quote_of_id != null && (!Number.isInteger(quote_of_id) || quote_of_id <= 0)) {
         return res.status(400).json({ error: 'Invalid quote_of_id' });
     }
 
-    if (reply_to_id && !Number.isInteger(reply_to_id)) {
+    if (reply_to_id != null && (!Number.isInteger(reply_to_id) || reply_to_id <= 0)) {
         return res.status(400).json({ error: 'Invalid reply_to_id' });
+    }
+
+    if (quote_of_id && reply_to_id) {
+        return res.status(400).json({ error: 'A chirp cannot be both a quote and a reply' });
     }
 
     try {
@@ -168,6 +203,14 @@ router.post("/", protect, async (req, res) => {
         res.status(201).json(newChirp.rows[0]);
     }
     catch (error) {
+        if (error.code === '23503') {
+            if (error.constraint === 'chirps_reply_to_id_fkey') {
+                return res.status(404).json({ error: 'Parent chirp not found' });
+            }
+            if (error.constraint === 'chirps_quote_of_id_fkey') {
+                return res.status(404).json({ error: 'Quoted chirp not found' });
+            }
+        }
         console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
@@ -181,8 +224,16 @@ router.put('/:id', protect, async (req, res) => {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    if (!content) {
+    if (!Number.isInteger(Number(id)) || id <= 0) {
+        return res.status(400).json({ error: 'Invalid chirp ID' });
+    }
+
+    if (!content || typeof content !== 'string' || content.trim().length === 0) {
         return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (content.length > MAX_CHIRP_LENGTH) {
+        return res.status(400).json({ error: `Content cannot be longer than ${MAX_CHIRP_LENGTH} characters` });
     }
 
     try {
@@ -206,6 +257,10 @@ router.delete('/:id', protect, async (req, res) => {
 
     if(!req.user?.id) {
         return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (!Number.isInteger(Number(id)) || id <= 0) {
+        return res.status(400).json({ error: 'Invalid chirp ID' });
     }
 
     try {

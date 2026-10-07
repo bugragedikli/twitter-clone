@@ -17,7 +17,7 @@ router.get('/:username', optionalAuth, async (req, res) => {
         }
         
         const result = await pool.query(`
-            SELECT u.*,
+            SELECT u.id, u.username, u.display_name, u.profile_image_url, u.bio, u.created_at,
                 (SELECT COUNT(*) FROM chirps c WHERE c.user_id = u.id)::int AS chirps_count,
                 (SELECT COUNT(*) FROM follows f WHERE f.following_id = u.id)::int AS followers_count,
                 (SELECT COUNT(*) FROM follows f WHERE f.follower_id = u.id)::int AS following_count,
@@ -47,6 +47,22 @@ const sendFollowList = async (req, res, type) => {
 
     if (!Number.isInteger(userId) || (before !== null && !Number.isInteger(before))) {
         return res.status(400).json({ error: 'Invalid parameters' });
+    }
+
+    if(limit <= 0) {
+        return res.status(400).json({ error: 'Limit must be a positive integer' });
+    }
+
+    if(type !== 'followers' && type !== 'followings') {
+        return res.status(400).json({ error: 'Invalid type parameter' });
+    }
+
+    if (userId <= 0) {
+        return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    if (before !== null && before <= 0) {
+        return res.status(400).json({ error: 'Invalid before parameter' });
     }
 
     try {
@@ -88,8 +104,20 @@ router.get('/:id/replies', optionalAuth, async (req, res) => {
         return res.status(400).json({ error: 'Invalid parameters' });
     }
 
+    if(limit <= 0) {
+        return res.status(400).json({ error: 'Limit must be a positive integer' });
+    }
+
+    if (userId <= 0) {
+        return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    if (before !== null && before <= 0) {
+        return res.status(400).json({ error: 'Invalid before parameter' });
+    }
+
     try {
-        res.json(await getReplyChirps({ userId, limit, before, viewerId: null, reply_to_id: null }));
+        res.json(await getReplyChirps({ userId, limit, before, viewerId: req.user?.id ?? null, reply_to_id: null }));
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
